@@ -1,0 +1,80 @@
+################################################################
+# Global configuration
+################################################################
+[global]
+  checkNewVersion = false
+  sendAnonymousUsage = false
+
+################################################################
+# Logs configuration
+################################################################
+
+# Treafik log
+[log]
+  level = "DEBUG"
+  filePath = "/etc/traefik/log/traefik.log"
+  format = "json"
+
+# Access log
+[accessLog]
+  filePath = "/etc/traefik/log/access.log"
+  format = "json"
+
+################################################################
+# API and dashboard configuration
+################################################################
+
+# Enable API and dashboard
+[api]
+  insecure = false
+  dashboard = true
+
+################################################################
+# Provider configuration
+################################################################
+
+# Enable Docker configuration backend
+[providers.docker]
+  endpoint = "unix:///var/run/docker.sock"
+  exposedByDefault = false
+  network = "proxynet"
+
+[providers.file]
+  directory = "/etc/traefik/conf.d"
+  watch = true
+
+################################################################
+# Entrypoints configuration
+################################################################
+[entryPoints]
+  [entryPoints.web]
+    address = ":80"
+    [entryPoints.web.http.redirections]
+      [entryPoints.web.http.redirections.entryPoint]
+      to = "websecure"
+      scheme = "https"
+
+  [entryPoints.websecure]
+    address = ":443"
+    asDefault = true
+
+################################################################
+# certificatesResolvers configuration
+################################################################
+[certificatesResolvers.prod.acme]
+  email = "${CF_API_EMAIL}"
+  storage = "/etc/traefik/certs/acme-prod.json"
+  [certificatesResolvers.prod.acme.dnsChallenge]
+    provider = "cloudflare"
+    resolvers = ["1.1.1.1:53", "8.8.8.8:53"]
+
+################################################################
+# TLS stores configuration
+################################################################
+[tls.stores]
+  [tls.stores.default]
+    [tls.stores.default.defaultGeneratedCert]
+      resolver = "prod"
+      [tls.stores.default.defaultGeneratedCert.main]
+        main = "example.tld"
+        sans = ["*.example.tld"]
